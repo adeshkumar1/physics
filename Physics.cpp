@@ -20,7 +20,7 @@ void resolveCollision(Ball &ball1, Ball &ball2) {
 		if (velocityAlongNormal > 0) {
 			return;
 		}
-		float impulseScalar = -(1 + 0.8) * velocityAlongNormal / (1 / ball1.getRadius() + 1 / ball2.getRadius());
+		float impulseScalar = -(2.1) * velocityAlongNormal / (1 / ball1.getRadius() + 1 / ball2.getRadius());
 		Vector2D impulseVector = normal * impulseScalar;
 
 		ball1.setVelocity(ball1.getVelocity() - impulseVector / ball1.getRadius());
@@ -59,7 +59,7 @@ void checkBoxCollision(Ball &ball, const Box &box) {
 
 void updatePhysics(std::vector<Ball> &balls, const Box &box, float timeStep) {
 	for (unsigned i = 0; i < balls.size(); i++) {
-		Ball &ball = balls.at(i);
+		auto &ball = balls.at(i);
 		checkBoxCollision(ball, box);
 		for (unsigned j = i + 1; j < balls.size(); j++) {
 			bool collision = checkCollision(balls.at(i), balls.at(j));
@@ -74,7 +74,7 @@ void updatePhysics(std::vector<Ball> &balls, const Box &box, float timeStep) {
 		float newX = pos.getX() + timeStep * vel.getX();
 		float newY = pos.getY() + timeStep * vel.getY();
 
-		float newVelY = vel.getY() + 0.4;
+		float newVelY = vel.getY() + 0.15;
 
 		Vector2D newPos(newX, newY);
 		Vector2D newVel({vel.getX(), newVelY});
