@@ -1,0 +1,6 @@
+# .clang-format
+
+IndentWidth: 3
+TabWidth: 3
+UseTab: Always
+ColumnLimit: 0
