@@ -1,5 +1,4 @@
 #include "Physics.h"
-#include "Vector2D.h"
 
 bool checkCollision(const Ball &ball1, const Ball &ball2) {
 	Vector2D difference = ball1.getPosition() - ball2.getPosition();
@@ -32,28 +31,37 @@ void checkBoxCollision(Ball &ball, const Box &box) {
 	Vector2D pos = ball.getPosition();
 	Vector2D velocity = ball.getVelocity();
 
-	if (pos.getX() - ball.getRadius() <= 400 - box.getWidth() / 2) {
+	float halfWidth = box.getWidth() / 2;
+	float halfHeight = box.getHeight() / 2;
+	float boxCenterX = box.getX();
+	float boxCenterY = box.getY();
+
+	// Check collision with the left wall of the box
+	if (pos.getX() - ball.getRadius() <= boxCenterX - halfWidth) {
 		velocity.setX(-velocity.getX());
 		ball.setVelocity(velocity);
-		ball.setPosition({ball.getRadius() + 400 - box.getWidth() / 2, pos.getY()});
+		ball.setPosition({boxCenterX - halfWidth + ball.getRadius(), pos.getY()});
 	}
 
-	if (pos.getX() + ball.getRadius() >= 400 + box.getWidth() / 2) {
+	// Check collision with the right wall of the box
+	if (pos.getX() + ball.getRadius() >= boxCenterX + halfWidth) {
 		velocity.setX(-velocity.getX());
 		ball.setVelocity(velocity);
-		ball.setPosition({400 + box.getWidth() / 2 - ball.getRadius(), pos.getY()});
+		ball.setPosition({boxCenterX + halfWidth - ball.getRadius(), pos.getY()});
 	}
 
-	if (pos.getY() - ball.getRadius() <= 300 - box.getHeight() / 2) {
+	// Check collision with the top wall of the box
+	if (pos.getY() - ball.getRadius() <= boxCenterY - halfHeight) {
 		velocity.setY(-velocity.getY());
 		ball.setVelocity(velocity);
-		ball.setPosition({pos.getX(), ball.getRadius() + 300 - box.getHeight() / 2});
+		ball.setPosition({pos.getX(), boxCenterY - halfHeight + ball.getRadius()});
 	}
 
-	if (pos.getY() + ball.getRadius() >= 300 + box.getHeight() / 2) {
+	// Check collision with the bottom wall of the box
+	if (pos.getY() + ball.getRadius() >= boxCenterY + halfHeight) {
 		velocity.setY(-velocity.getY());
 		ball.setVelocity(velocity);
-		ball.setPosition({pos.getX(), 300 + box.getHeight() / 2 - ball.getRadius()});
+		ball.setPosition({pos.getX(), boxCenterY + halfHeight - ball.getRadius()});
 	}
 }
 

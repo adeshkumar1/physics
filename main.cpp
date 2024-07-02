@@ -1,7 +1,9 @@
+
 #include "Ball.h"
 #include "Box.h"
 #include "Physics.h"
 #include "Vector2D.h"
+
 #include <SFML/Graphics.hpp>
 #include <random>
 
@@ -18,12 +20,12 @@ void drawBox(sf::RenderWindow &window, const Box &box) {
 	shape.setOutlineThickness(4.0);
 	shape.setFillColor(sf::Color(220, 220, 220, 20));
 	shape.setOutlineColor(sf::Color::Blue);
-	shape.setPosition(sf::Vector2f(400, 300));
+	shape.setPosition(sf::Vector2f(box.getX(), box.getY()));
 	window.draw(shape);
 }
 
 int main() {
-	sf::RenderWindow window(sf::VideoMode(800, 600), "Epic Ball Movements");
+	sf::RenderWindow window(sf::VideoMode(1920, 1080), "Epic Ball Movements");
 
 	std::default_random_engine generator;
 	std::uniform_int_distribution<int> circleRadius(15, 25);
@@ -31,7 +33,7 @@ int main() {
 	std::uniform_int_distribution<int> yVel(0, 100);
 	std::uniform_int_distribution<int> rgb(0, 255);
 
-	Box box(700, 550);
+	Box box(1920.0 / 2, 1080.0 / 2, {1920.0 / 2, 1080.0 / 2});
 	std::vector<Ball> balls;
 
 	sf::Clock clock;
@@ -43,7 +45,7 @@ int main() {
 				window.close();
 			}
 			if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter) {
-				Ball ball(Vector2D(400, 110), Vector2D(xVel(generator), yVel(generator)), circleRadius(generator));
+				Ball ball(Vector2D(box.getX(), box.getY() - 200), Vector2D(xVel(generator), yVel(generator)), circleRadius(generator));
 				sf::Color randColor(rgb(generator), rgb(generator), rgb(generator));
 				ball.setColor(randColor);
 				balls.push_back(ball);
@@ -54,12 +56,14 @@ int main() {
 		updatePhysics(balls, box, dt);
 
 		window.clear();
+
 		drawBox(window, box);
+
 		for (const Ball &ball : balls) {
 			drawBall(window, ball);
 		}
 		window.display();
 	}
 
-	return 0;
+	return 1;
 }
