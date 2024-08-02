@@ -66,10 +66,16 @@ void checkBoxCollision(Ball &ball, const Box &box) {
 }
 
 void updatePhysics(std::vector<Ball> &balls, const Box &box, float timeStep) {
+	std::sort(balls.begin(), balls.end(), [](const Ball &a, const Ball &b) {
+		return a.getPosition().getX() < b.getPosition().getX();
+	});
 	for (unsigned i = 0; i < balls.size(); i++) {
 		auto &ball = balls.at(i);
 		checkBoxCollision(ball, box);
 		for (unsigned j = i + 1; j < balls.size(); j++) {
+			if (balls.at(j).getPosition().getX() - ball.getPosition().getX() > ball.getRadius() + balls.at(j).getRadius()) {
+				break;
+			}
 			bool collision = checkCollision(balls.at(i), balls.at(j));
 			if (collision) {
 				resolveCollision(balls.at(i), balls.at(j));
