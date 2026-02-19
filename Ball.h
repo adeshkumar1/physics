@@ -1,50 +1,43 @@
 #pragma once
 #include "Vector2D.h"
-#include <sfml/Graphics.hpp>
+#include <cmath>
+#include <cstdint>
+
+struct Color {
+	uint8_t r = 255, g = 255, b = 255, a = 255;
+};
 
 class Ball {
  private:
 	Vector2D position;
 	Vector2D velocity;
-	float radius;
-	sf::Color color;
+	float radius = 1.0f;
+	float mass = 1.0f;
+	Color color;
+
+	void computeMass() { mass = 3.14159f * radius * radius; }
 
  public:
 	Ball() = default;
-	Ball(Vector2D position, Vector2D velocity, float radius) : position(position), velocity(velocity), radius(radius) {}
 
-	Vector2D getPosition() const {
-		return position;
-	}
-	Vector2D getVelocity() const {
-		return velocity;
-	}
-	float getRadius() const {
-		return radius;
+	Ball(Vector2D position, Vector2D velocity, float radius)
+	    : position(position), velocity(velocity), radius(radius) {
+		computeMass();
 	}
 
-	void setPosition(const Vector2D &other) {
-		position = other;
-	}
+	const Vector2D &getPosition() const { return position; }
+	const Vector2D &getVelocity() const { return velocity; }
+	float getRadius() const { return radius; }
+	float getMass() const { return mass; }
+	Color getColor() const { return color; }
 
-	void setVelocity(const Vector2D &other) {
-		velocity = other;
-		if (velocity.getX() >= 300) {
-			velocity.setX(290);
-		}
-		if (velocity.getX() <= -300) {
-			velocity.setX(-290);
-		}
-	}
+	void setPosition(const Vector2D &pos) { position = pos; }
+	void setVelocity(const Vector2D &vel) { velocity = vel; }
+
 	void setRadius(float r) {
 		radius = r;
+		computeMass();
 	}
 
-	sf::Color getColor() const {
-		return color;
-	}
-
-	void setColor(sf::Color c) {
-		color = c;
-	}
+	void setColor(Color c) { color = c; }
 };

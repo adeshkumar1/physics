@@ -5,36 +5,19 @@ class Box {
  private:
 	float width;
 	float height;
-	float x;
-	float y;
+	Vector2D position;
 
  public:
-	Box(float width, float height, Vector2D pos) : width(width), height(height) {
-		x = pos.getX();
-		y = pos.getY();
-	}
+	Box(float width, float height, Vector2D pos)
+	    : width(width), height(height), position(pos) {}
 
-	float getWidth() const {
-		return width;
-	}
+	float getWidth() const { return width; }
+	float getHeight() const { return height; }
+	const Vector2D &getPosition() const { return position; }
+	float getX() const { return position.getX(); }
+	float getY() const { return position.getY(); }
 
-	float getHeight() const {
-		return height;
-	}
-
-	void setWidth(float w) {
-		width = w;
-	}
-
-	void setHeight(float h) {
-		height = h;
-	}
-
-	float getX() const {
-		return x;
-	}
-
-	float getY() const {
-		return y;
-	}
+	void setWidth(float w) { width = w; }
+	void setHeight(float h) { height = h; }
+	void setPosition(const Vector2D &pos) { position = pos; }
 };

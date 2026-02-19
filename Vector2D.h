@@ -6,28 +6,26 @@ class Vector2D {
 	float xPos, yPos;
 
  public:
-	Vector2D() : xPos(0.0), yPos(0.0) {}
-	Vector2D(float pos1, float pos2) : xPos(pos1), yPos(pos2) {}
+	Vector2D() : xPos(0.0f), yPos(0.0f) {}
+	Vector2D(float x, float y) : xPos(x), yPos(y) {}
 
-	Vector2D operator+(const Vector2D &other);
-	Vector2D operator-(const Vector2D &other);
+	Vector2D operator+(const Vector2D &other) const;
+	Vector2D operator-(const Vector2D &other) const;
 	Vector2D operator*(float scalar) const;
 	Vector2D operator/(float scalar) const;
 
+	Vector2D &operator+=(const Vector2D &other);
+	Vector2D &operator-=(const Vector2D &other);
+	Vector2D &operator*=(float scalar);
+
+	float dot(const Vector2D &other) const;
+	float lengthSquared() const;
 	float length() const;
-	Vector2D normalization() const;
+	Vector2D normalized() const;
 
-	float getX() {
-		return xPos;
-	}
-	float getY() {
-		return yPos;
-	}
+	float getX() const { return xPos; }
+	float getY() const { return yPos; }
 
-	void setX(float num) {
-		xPos = num;
-	}
-	void setY(float num) {
-		yPos = num;
-	}
+	void setX(float num) { xPos = num; }
+	void setY(float num) { yPos = num; }
 };

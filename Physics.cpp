@@ -1,99 +1,114 @@
 #include "Physics.h"
+#include <algorithm>
+#include <cmath>
 
 bool checkCollision(const Ball &ball1, const Ball &ball2) {
-	Vector2D difference = ball1.getPosition() - ball2.getPosition();
-
-	float distance = difference.length();
-
-	return distance <= ball1.getRadius() + ball2.getRadius();
+	Vector2D delta = ball1.getPosition() - ball2.getPosition();
+	float radiiSum = ball1.getRadius() + ball2.getRadius();
+	return delta.lengthSquared() <= radiiSum * radiiSum;
 }
 
 void resolveCollision(Ball &ball1, Ball &ball2) {
-	if (checkCollision(ball1, ball2)) {
-		Vector2D normal = ball2.getPosition() - ball1.getPosition();
-		normal = normal.normalization();
+	Vector2D delta = ball2.getPosition() - ball1.getPosition();
+	float dist = delta.length();
+	float radiiSum = ball1.getRadius() + ball2.getRadius();
 
-		Vector2D relativeVel = ball2.getVelocity() - ball1.getVelocity();
+	if (dist >= radiiSum || dist < 1e-6f) return;
 
-		float velocityAlongNormal = relativeVel.getX() * normal.getX() + relativeVel.getY() * normal.getY();
-		if (velocityAlongNormal > 0) {
-			return;
-		}
-		float impulseScalar = -(2.1) * velocityAlongNormal / (1 / ball1.getRadius() + 1 / ball2.getRadius());
-		Vector2D impulseVector = normal * impulseScalar;
+	Vector2D normal = delta / dist;
 
-		ball1.setVelocity(ball1.getVelocity() - impulseVector / ball1.getRadius());
-		ball2.setVelocity(ball2.getVelocity() + impulseVector / ball2.getRadius());
-	}
+	// Positional correction: push balls apart so they no longer overlap
+	float overlap = radiiSum - dist;
+	float totalMass = ball1.getMass() + ball2.getMass();
+	ball1.setPosition(ball1.getPosition() - normal * (overlap * ball2.getMass() / totalMass));
+	ball2.setPosition(ball2.getPosition() + normal * (overlap * ball1.getMass() / totalMass));
+
+	// Impulse-based velocity resolution
+	Vector2D relativeVel = ball1.getVelocity() - ball2.getVelocity();
+	float velAlongNormal = relativeVel.dot(normal);
+
+	if (velAlongNormal < 0) return;
+
+	float impulseScalar = -(1.0f + BALL_RESTITUTION) * velAlongNormal
+	                      / (1.0f / ball1.getMass() + 1.0f / ball2.getMass());
+
+	Vector2D impulse = normal * impulseScalar;
+	ball1.setVelocity(ball1.getVelocity() + impulse / ball1.getMass());
+	ball2.setVelocity(ball2.getVelocity() - impulse / ball2.getMass());
 }
 
-void checkBoxCollision(Ball &ball, const Box &box) {
+void resolveBoxCollision(Ball &ball, const Box &box) {
 	Vector2D pos = ball.getPosition();
-	Vector2D velocity = ball.getVelocity();
+	Vector2D vel = ball.getVelocity();
+	float r = ball.getRadius();
 
-	float halfWidth = box.getWidth() / 2;
-	float halfHeight = box.getHeight() / 2;
-	float boxCenterX = box.getX();
-	float boxCenterY = box.getY();
+	float halfW = box.getWidth() / 2.0f;
+	float halfH = box.getHeight() / 2.0f;
+	float cx = box.getX();
+	float cy = box.getY();
 
-	// Check collision with the left wall of the box
-	if (pos.getX() - ball.getRadius() <= boxCenterX - halfWidth) {
-		velocity.setX(-velocity.getX());
-		ball.setVelocity(velocity);
-		ball.setPosition({boxCenterX - halfWidth + ball.getRadius(), pos.getY()});
+	float left = cx - halfW;
+	float right = cx + halfW;
+	float top = cy - halfH;
+	float bottom = cy + halfH;
+
+	if (pos.getX() - r <= left) {
+		vel.setX(std::abs(vel.getX()) * WALL_RESTITUTION);
+		pos.setX(left + r);
+	} else if (pos.getX() + r >= right) {
+		vel.setX(-std::abs(vel.getX()) * WALL_RESTITUTION);
+		pos.setX(right - r);
 	}
 
-	// Check collision with the right wall of the box
-	if (pos.getX() + ball.getRadius() >= boxCenterX + halfWidth) {
-		velocity.setX(-velocity.getX());
-		ball.setVelocity(velocity);
-		ball.setPosition({boxCenterX + halfWidth - ball.getRadius(), pos.getY()});
+	if (pos.getY() - r <= top) {
+		vel.setY(std::abs(vel.getY()) * WALL_RESTITUTION);
+		pos.setY(top + r);
+	} else if (pos.getY() + r >= bottom) {
+		vel.setY(-std::abs(vel.getY()) * WALL_RESTITUTION);
+		pos.setY(bottom - r);
 	}
 
-	// Check collision with the top wall of the box
-	if (pos.getY() - ball.getRadius() <= boxCenterY - halfHeight) {
-		velocity.setY(-velocity.getY());
-		ball.setVelocity(velocity);
-		ball.setPosition({pos.getX(), boxCenterY - halfHeight + ball.getRadius()});
-	}
+	ball.setPosition(pos);
+	ball.setVelocity(vel);
+}
 
-	// Check collision with the bottom wall of the box
-	if (pos.getY() + ball.getRadius() >= boxCenterY + halfHeight) {
-		velocity.setY(-velocity.getY());
-		ball.setVelocity(velocity);
-		ball.setPosition({pos.getX(), boxCenterY + halfHeight - ball.getRadius()});
+static void clampSpeed(Ball &ball) {
+	Vector2D vel = ball.getVelocity();
+	if (vel.lengthSquared() > MAX_SPEED * MAX_SPEED) {
+		ball.setVelocity(vel.normalized() * MAX_SPEED);
 	}
 }
 
 void updatePhysics(std::vector<Ball> &balls, const Box &box, float timeStep) {
+	// Sort by X for sweep-and-prune broad phase
 	std::sort(balls.begin(), balls.end(), [](const Ball &a, const Ball &b) {
 		return a.getPosition().getX() < b.getPosition().getX();
 	});
-	for (unsigned i = 0; i < balls.size(); i++) {
-		auto &ball = balls.at(i);
-		checkBoxCollision(ball, box);
-		for (unsigned j = i + 1; j < balls.size(); j++) {
-			if (balls.at(j).getPosition().getX() - ball.getPosition().getX() > ball.getRadius() + balls.at(j).getRadius()) {
-				break;
-			}
-			bool collision = checkCollision(balls.at(i), balls.at(j));
-			if (collision) {
-				resolveCollision(balls.at(i), balls.at(j));
+
+	for (size_t i = 0; i < balls.size(); i++) {
+		Ball &ball = balls[i];
+
+		// Semi-implicit Euler: apply forces to velocity first
+		Vector2D vel = ball.getVelocity();
+		vel.setY(vel.getY() + GRAVITY * timeStep);
+		vel *= (1.0f - AIR_DRAG * timeStep);
+		ball.setVelocity(vel);
+
+		// Then integrate position using the updated velocity
+		ball.setPosition(ball.getPosition() + ball.getVelocity() * timeStep);
+
+		resolveBoxCollision(ball, box);
+
+		// Narrow-phase collision detection against nearby balls
+		for (size_t j = i + 1; j < balls.size(); j++) {
+			float xGap = balls[j].getPosition().getX() - ball.getPosition().getX();
+			if (xGap > ball.getRadius() + balls[j].getRadius()) break;
+
+			if (checkCollision(ball, balls[j])) {
+				resolveCollision(ball, balls[j]);
 			}
 		}
 
-		Vector2D vel = ball.getVelocity();
-		Vector2D pos = ball.getPosition();
-
-		float newX = pos.getX() + timeStep * vel.getX();
-		float newY = pos.getY() + timeStep * vel.getY();
-
-		float newVelY = vel.getY() + 0.15;
-
-		Vector2D newPos(newX, newY);
-		Vector2D newVel({vel.getX(), newVelY});
-
-		ball.setPosition(newPos);
-		ball.setVelocity(newVel);
+		clampSpeed(ball);
 	}
 }
