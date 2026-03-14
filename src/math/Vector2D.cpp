@@ -1,4 +1,4 @@
-#include "Vector2D.h"
+#include "math/Vector2D.h"
 
 Vector2D Vector2D::operator+(const Vector2D &other) const {
 	return {xPos + other.xPos, yPos + other.yPos};

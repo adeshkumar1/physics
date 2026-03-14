@@ -1,24 +1,37 @@
 # 2D Ball Physics Simulation
 
-A real-time 2D physics simulation built from scratch in C++20 with SFML 3. Spawn balls into a bounded box and watch them fall under gravity, bounce off walls, and collide with each other.
+A real-time 2D physics simulation built from scratch in C++20 with SFML 3. Spawn balls into a bounded box and watch them fall under gravity, bounce off walls, collide, spin, and settle to rest.
 
 ## Features
 
-* **Circle-Circle Collision Detection** -- Distance-based overlap test between ball pairs, optimized with a sweep-and-prune pass (sort on X-axis, early exit when separation exceeds combined radii).
-* **Impulse-Based Collision Resolution** -- Computes collision normals and applies mass-proportional impulse responses so smaller balls react more than larger ones.
-* **Wall Bouncing** -- Balls reflect off all four walls of a centered bounding box with velocity clamping to prevent tunneling.
-* **Gravity & Integration** -- Constant downward acceleration with per-frame Euler integration for position and velocity updates.
-* **Interactive Spawning** -- Press **Enter** to spawn a new ball at the top of the box with a random radius (15--25 px), random velocity, and random color.
+* **Impulse-Based Collision Resolution** -- Mass-proportional normal and tangential impulses for both ball-ball and ball-wall collisions.
+* **Friction** -- Coulomb friction model applies tangential impulses at contact points, causing realistic energy loss and spin.
+* **Angular Velocity & Rotation** -- Balls spin from off-center collisions and friction torque. Each ball displays a rotation indicator line.
+* **Quadratic Air Drag** -- Realistic velocity-squared drag model instead of linear damping.
+* **Sub-Stepped Integration** -- 4 sub-steps per frame using semi-implicit Euler for stable stacking and reduced tunneling.
+* **Sleeping Bodies** -- Balls at rest deactivate after 0.5s, skipping physics computation. They wake on collision. Sleeping balls render semi-transparent.
+* **Per-Ball Materials** -- Each ball has its own restitution and friction. Collisions combine materials using `min(e1, e2)` and `sqrt(f1 * f2)`.
+* **Spatial Grid Broad Phase** -- O(n) uniform grid replaces O(n log n) sweep-and-prune for scalable collision detection.
+* **Configurable Physics** -- All constants (gravity, drag, friction, sub-steps, sleep threshold) live in a `PhysicsConfig` struct, tunable at runtime.
+* **Debug Visualization** -- Toggle velocity vectors and see sleeping state with a keypress.
+* **HUD Overlay** -- FPS, ball count, and sleeping count displayed on screen.
 
 ## Project Structure
 
 ```
-Ball.h          Circle entity with position, velocity, radius, mass, and color
-Box.h           Axis-aligned rectangular boundary
-Vector2D.h/cpp  2D vector math (arithmetic, dot product, normalization)
-Physics.h/cpp   Collision detection, resolution, wall bouncing, physics step
-main.cpp        SFML window, event loop, rendering
-CMakeLists.txt  Build configuration
+src/
+├── main.cpp                 Entry point, SFML rendering, event loop, HUD
+├── math/
+│   ├── Vector2D.h           2D vector class with arithmetic operators
+│   └── Vector2D.cpp         Vector math implementation
+├── entities/
+│   ├── Ball.h               Ball entity with position, velocity, rotation, material
+│   └── Box.h                Axis-aligned rectangular boundary
+└── physics/
+    ├── Physics.h            PhysicsConfig struct and update API
+    ├── Physics.cpp           Phased pipeline: integrate, collide, sleep
+    └── SpatialGrid.h        Uniform grid for O(n) broad-phase collision
+CMakeLists.txt               Build configuration
 ```
 
 ## Prerequisites
@@ -32,12 +45,26 @@ CMakeLists.txt  Build configuration
 ```bash
 cmake -B build
 cmake --build build
-./build/main
+./build/physics_sim
 ```
 
 ## Controls
 
-| Key | Action |
-|-------|-------------------------------|
-| Enter | Spawn a new ball |
+| Key   | Action                       |
+|-------|------------------------------|
+| Enter | Spawn a new ball             |
+| D     | Toggle debug mode (velocity vectors) |
 | Close | Click the window close button |
+
+## Physics Pipeline
+
+Each frame runs N sub-steps (default 4), each executing:
+
+1. **Integrate forces** -- Apply gravity and quadratic drag to velocity
+2. **Integrate positions** -- Update position and rotation angle
+3. **Wall collisions** -- Impulse-based resolution with friction and torque
+4. **Broad phase** -- Insert balls into spatial grid, generate candidate pairs
+5. **Narrow phase & resolve** -- Distance check, then normal + friction impulses
+6. **Speed clamping** -- Cap velocity to prevent instability
+
+After all sub-steps, sleeping detection runs once per frame.
